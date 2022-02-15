@@ -171,5 +171,17 @@ checkTypeAndInterprete e = case infer Map.empty e of
   Left er -> Left er
   Right ty -> Right $ interprete Map.empty e
 
+ppType :: Either Error Type -> String
+ppType ty = case ty of
+  Left er -> "TODO-ERROR"
+  Right ty' -> aux ty'
+  where 
+    aux :: Type -> String
+    aux t = case t of
+      TInt -> "int"
+      TBool -> "bool"
+      TArrow ty' ty2 -> aux ty' ++ " -> " ++ aux ty2
+
 main :: IO()
-main = print $ checkType $ sumTest 10 5
+-- main = putStrLn . (\x -> "- : " ++ ppType x) $ checkType $ sumTest 10 5
+main = print $ checkTypeAndInterprete $ sumTest 1 2
