@@ -42,6 +42,26 @@ data Error
   | ErrorNotLambda {exprA :: Expr, typeA :: Type}
   deriving (Show)
 
+ppType :: Either Error Type -> String
+ppType ty = case ty of
+  Left er -> "pretty print failed, check your expression"
+  Right ty' -> aux ty'
+  where 
+    aux t = case t of
+      TInt -> "int"
+      TBool -> "bool"
+      TArrow ty' ty2 -> aux ty' ++ " -> " ++ aux ty2
+
+ppValue :: Either Error (Maybe Value) -> String
+ppValue v = case v of
+  Left er -> "pretty print failed, check your expression"
+  Right m_va -> maybe "pretty print failed, check your expression" aux m_va
+    where
+      aux va' = case va' of
+        VInt i -> "VInt " ++ show i
+        VBool b -> "VBool " ++ if b then "true" else "false"
+        Closure {} -> "VClosure"
+
 infer :: TyContext -> Expr -> Either Error Type
 infer context expr = 
   case expr of
@@ -104,6 +124,16 @@ interpreteBinop op (VInt v) (VInt v') = case op of
   Div -> if v' == 0 then error "Divide by zero" else VInt $ v `div` v'
 interpreteBinop op _ _ = error "This operation expects an Int argument"
 
+checkType :: Expr -> Either Error Type
+checkType e = case infer Map.empty e of
+  Left er -> Left er
+  Right ty -> Right ty
+
+checkTypeAndInterprete :: Expr -> Either Error (Maybe Value)
+checkTypeAndInterprete e = case infer Map.empty e of
+  Left er -> Left er
+  Right ty -> Right $ interprete Map.empty e
+
 callTest :: Expr
 callTest = 
   App { 
@@ -160,37 +190,7 @@ sumTest x y =
           },
       arg = EInt y
     }
-
-checkType :: Expr -> Either Error Type
-checkType e = case infer Map.empty e of
-  Left er -> Left er
-  Right ty -> Right ty
-
-checkTypeAndInterprete :: Expr -> Either Error (Maybe Value)
-checkTypeAndInterprete e = case infer Map.empty e of
-  Left er -> Left er
-  Right ty -> Right $ interprete Map.empty e
-
-ppType :: Either Error Type -> String
-ppType ty = case ty of
-  Left er -> "pretty print failed, check your expression"
-  Right ty' -> aux ty'
-  where 
-    aux t = case t of
-      TInt -> "int"
-      TBool -> "bool"
-      TArrow ty' ty2 -> aux ty' ++ " -> " ++ aux ty2
-
-ppValue :: Either Error (Maybe Value) -> String
-ppValue v = case v of
-  Left er -> "pretty print failed, check your expression"
-  Right m_va -> maybe "pretty print failed, check your expression" aux m_va
-    where
-      aux va' = case va' of
-        VInt i -> "VInt " ++ show i
-        VBool b -> "VBool " ++ if b then "true" else "false"
-        Closure {} -> "VClosure"
-
+ 
 main :: IO()
 -- main = putStrLn . (\x -> "- : " ++ ppType x) $ checkType $ sumTest 10 5
 main = putStrLn $ ppValue $ checkTypeAndInterprete $ sumTest 1 2
