@@ -74,7 +74,7 @@ infer context expr =
 
 interprete :: Context -> Expr -> Maybe Value
 interprete context expr = do
-  traceM ("context: " ++ show context)
+  -- traceM ("context: " ++ show context)
   case expr of
     EInt n -> Just $ VInt n
     EBool b -> Just $ VBool b
@@ -150,7 +150,7 @@ sumTest x y =
                         param_type' = TInt,
                         body =
                           Prim
-                            { op = Div,
+                            { op = Add,
                               argA = Var "x",
                               argB = Var "y"
                             }
@@ -173,15 +173,24 @@ checkTypeAndInterprete e = case infer Map.empty e of
 
 ppType :: Either Error Type -> String
 ppType ty = case ty of
-  Left er -> "TODO-ERROR"
+  Left er -> "pretty print failed, check your expression"
   Right ty' -> aux ty'
   where 
-    aux :: Type -> String
     aux t = case t of
       TInt -> "int"
       TBool -> "bool"
       TArrow ty' ty2 -> aux ty' ++ " -> " ++ aux ty2
 
+ppValue :: Either Error (Maybe Value) -> String
+ppValue v = case v of
+  Left er -> "pretty print failed, check your expression"
+  Right m_va -> maybe "pretty print failed, check your expression" aux m_va
+    where
+      aux va' = case va' of
+        VInt i -> "VInt " ++ show i
+        VBool b -> "VBool " ++ if b then "true" else "false"
+        Closure {} -> "VClosure"
+
 main :: IO()
 -- main = putStrLn . (\x -> "- : " ++ ppType x) $ checkType $ sumTest 10 5
-main = print $ checkTypeAndInterprete $ sumTest 1 2
+main = putStrLn $ ppValue $ checkTypeAndInterprete $ sumTest 1 2
